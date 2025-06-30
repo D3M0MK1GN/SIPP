@@ -1,0 +1,118 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: hsl(0, 0%, 100%);
+  --foreground: hsl(20, 14.3%, 4.1%);
+  --muted: hsl(60, 4.8%, 95.9%);
+  --muted-foreground: hsl(25, 5.3%, 44.7%);
+  --popover: hsl(0, 0%, 100%);
+  --popover-foreground: hsl(20, 14.3%, 4.1%);
+  --card: hsl(0, 0%, 100%);
+  --card-foreground: hsl(20, 14.3%, 4.1%);
+  --border: hsl(20, 5.9%, 90%);
+  --input: hsl(20, 5.9%, 90%);
+  --primary: hsl(207, 90%, 54%);
+  --primary-foreground: hsl(211, 100%, 99%);
+  --secondary: hsl(60, 4.8%, 95.9%);
+  --secondary-foreground: hsl(24, 9.8%, 10%);
+  --accent: hsl(60, 4.8%, 95.9%);
+  --accent-foreground: hsl(24, 9.8%, 10%);
+  --destructive: hsl(0, 84.2%, 60.2%);
+  --destructive-foreground: hsl(60, 9.1%, 97.8%);
+  --ring: hsl(20, 14.3%, 4.1%);
+  --radius: 0.5rem;
+
+  /* Police theme colors */
+  --police-primary: hsl(207, 90%, 54%);
+  --police-secondary: hsl(220, 10%, 35%);
+  --police-accent: hsl(0, 65%, 55%);
+  --police-success: hsl(159, 64%, 40%);
+  --police-background: hsl(210, 20%, 98%);
+}
+
+.dark {
+  --background: hsl(240, 10%, 3.9%);
+  --foreground: hsl(0, 0%, 98%);
+  --muted: hsl(240, 3.7%, 15.9%);
+  --muted-foreground: hsl(240, 5%, 64.9%);
+  --popover: hsl(240, 10%, 3.9%);
+  --popover-foreground: hsl(0, 0%, 98%);
+  --card: hsl(240, 10%, 3.9%);
+  --card-foreground: hsl(0, 0%, 98%);
+  --border: hsl(240, 3.7%, 15.9%);
+  --input: hsl(240, 3.7%, 15.9%);
+  --primary: hsl(207, 90%, 54%);
+  --primary-foreground: hsl(211, 100%, 99%);
+  --secondary: hsl(240, 3.7%, 15.9%);
+  --secondary-foreground: hsl(0, 0%, 98%);
+  --accent: hsl(240, 3.7%, 15.9%);
+  --accent-foreground: hsl(0, 0%, 98%);
+  --destructive: hsl(0, 62.8%, 30.6%);
+  --destructive-foreground: hsl(0, 0%, 98%);
+  --ring: hsl(240, 4.9%, 83.9%);
+  --radius: 0.5rem;
+
+  /* Police theme colors for dark mode */
+  --police-primary: hsl(207, 90%, 54%);
+  --police-secondary: hsl(220, 10%, 65%);
+  --police-accent: hsl(0, 65%, 60%);
+  --police-success: hsl(159, 64%, 50%);
+  --police-background: hsl(240, 10%, 3.9%);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased bg-police-background text-foreground;
+    background-color: hsl(210, 20%, 98%);
+  }
+
+  /* Custom styles for police theme */
+  .police-primary {
+    color: var(--police-primary);
+  }
+
+  .police-secondary {
+    color: var(--police-secondary);
+  }
+
+  .police-accent {
+    color: var(--police-accent);
+  }
+
+  .police-success {
+    color: var(--police-success);
+  }
+
+  .bg-police-primary {
+    background-color: var(--police-primary);
+  }
+
+  .bg-police-secondary {
+    background-color: var(--police-secondary);
+  }
+
+  .bg-police-accent {
+    background-color: var(--police-accent);
+  }
+
+  .bg-police-success {
+    background-color: var(--police-success);
+  }
+
+  .bg-police-background {
+    background-color: var(--police-background);
+  }
+
+  /* Ensure proper mobile padding */
+  @media (max-width: 768px) {
+    body {
+      padding-bottom: 80px;
+    }
+  }
+}
