@@ -11,25 +11,32 @@ import {
   type ActivityLog,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, sql, and, gte, lt } from "drizzle-orm";
+import { eq, desc, sql, and, gte, lt, ilike, or } from "drizzle-orm";
 
 // Interface for storage operations
 export interface IStorage {
-  // User operations (mandatory for Replit Auth)
-  getUser(id: string): Promise<User | undefined>;
-  upsertUser(user: UpsertUser): Promise<User>;
+  // User operations
+  getUser(id: number): Promise<User | undefined>;
+  getUserByUsername(username: string): Promise<User | undefined>;
+  createUser(user: UpsertUser): Promise<User>;
   
   // Detainee operations
-  createDetainee(detainee: InsertDetainee & { registeredBy: string }): Promise<Detainee>;
-  searchDetaineesByCedula(cedula: string): Promise<Detainee[]>;
+  createDetainee(detainee: InsertDetainee & { registeredBy: number }): Promise<Detainee>;
+  searchDetainees(criteria: {
+    cedula?: string;
+    fullName?: string;
+    state?: string;
+    municipality?: string;
+    parish?: string;
+  }): Promise<Detainee[]>;
   getAllDetainees(): Promise<Detainee[]>;
   getDetaineeById(id: number): Promise<Detainee | undefined>;
   
   // Search logging
-  logSearch(userId: string, searchTerm: string, resultsCount: number): Promise<SearchLog>;
+  logSearch(userId: number, searchTerm: string, resultsCount: number): Promise<SearchLog>;
   
   // Activity logging
-  logActivity(userId: string, action: string, description?: string): Promise<ActivityLog>;
+  logActivity(userId: number, action: string, description?: string): Promise<ActivityLog>;
   
   // Dashboard statistics
   getDashboardStats(): Promise<{
@@ -44,30 +51,28 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
-  // User operations (mandatory for Replit Auth)
+  // User operations
 
-  async getUser(id: string): Promise<User | undefined> {
+  async getUser(id: number): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
     return user;
   }
 
-  async upsertUser(userData: UpsertUser): Promise<User> {
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user;
+  }
+
+  async createUser(userData: UpsertUser): Promise<User> {
     const [user] = await db
       .insert(users)
       .values(userData)
-      .onConflictDoUpdate({
-        target: users.id,
-        set: {
-          ...userData,
-          updatedAt: new Date(),
-        },
-      })
       .returning();
     return user;
   }
 
   // Detainee operations
-  async createDetainee(detaineeData: InsertDetainee & { registeredBy: string }): Promise<Detainee> {
+  async createDetainee(detaineeData: InsertDetainee & { registeredBy: number }): Promise<Detainee> {
     const [detainee] = await db
       .insert(detainees)
       .values(detaineeData)
@@ -75,12 +80,37 @@ export class DatabaseStorage implements IStorage {
     return detainee;
   }
 
-  async searchDetaineesByCedula(cedula: string): Promise<Detainee[]> {
-    return await db
-      .select()
-      .from(detainees)
-      .where(eq(detainees.cedula, cedula))
-      .orderBy(desc(detainees.createdAt));
+  async searchDetainees(criteria: {
+    cedula?: string;
+    fullName?: string;
+    state?: string;
+    municipality?: string;
+    parish?: string;
+  }): Promise<Detainee[]> {
+    let query = db.select().from(detainees);
+    
+    const conditions = [];
+    if (criteria.cedula) {
+      conditions.push(eq(detainees.cedula, criteria.cedula));
+    }
+    if (criteria.fullName) {
+      conditions.push(sql`${detainees.fullName} ILIKE ${'%' + criteria.fullName + '%'}`);
+    }
+    if (criteria.state) {
+      conditions.push(eq(detainees.state, criteria.state));
+    }
+    if (criteria.municipality) {
+      conditions.push(eq(detainees.municipality, criteria.municipality));
+    }
+    if (criteria.parish) {
+      conditions.push(eq(detainees.parish, criteria.parish));
+    }
+
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions)) as any;
+    }
+
+    return await query.orderBy(desc(detainees.createdAt));
   }
 
   async getAllDetainees(): Promise<Detainee[]> {
@@ -99,7 +129,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Search logging
-  async logSearch(userId: string, searchTerm: string, resultsCount: number): Promise<SearchLog> {
+  async logSearch(userId: number, searchTerm: string, resultsCount: number): Promise<SearchLog> {
     const [log] = await db
       .insert(searchLogs)
       .values({ userId, searchTerm, resultsCount })
@@ -108,7 +138,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Activity logging
-  async logActivity(userId: string, action: string, description?: string): Promise<ActivityLog> {
+  async logActivity(userId: number, action: string, description?: string): Promise<ActivityLog> {
     const [log] = await db
       .insert(activityLogs)
       .values({ userId, action, description })

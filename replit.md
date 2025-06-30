@@ -114,7 +114,18 @@ This is a full-stack police management system built with React, Express, and Pos
 
 Preferred communication style: Simple, everyday language.
 
+## Recent Changes
+
+- June 30, 2025: Initial setup with Replit Auth system
+- June 30, 2025: Major authentication system overhaul - replaced Replit Auth with local authentication system
+- June 30, 2025: Added responsive navigation with theme toggle (light/dark mode)
+- June 30, 2025: Enhanced database schema with municipality and parish fields for detainees
+- June 30, 2025: Improved mobile responsiveness with collapsible menu
+
 ## Changelog
 
-Changelog:
-- June 30, 2025. Initial setup
+- June 30, 2025: Initial setup
+- June 30, 2025: Replaced Replit Auth with local authentication (username/password)
+- June 30, 2025: Added dark/light theme support
+- June 30, 2025: Enhanced mobile navigation with hamburger menu
+- June 30, 2025: Extended detainee schema with municipality and parish fields

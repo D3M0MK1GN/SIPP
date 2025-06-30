@@ -1,8 +1,8 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { setupAuth, isAuthenticated } from "./replitAuth";
-import { insertDetaineeSchema, searchDetaineeSchema } from "@shared/schema";
+import { setupAuth, requireAuth, comparePassword } from "./auth";
+import { insertDetaineeSchema, searchDetaineeSchema, loginSchema, registerUserSchema } from "@shared/schema";
 import multer from "multer";
 import { z } from "zod";
 
@@ -18,19 +18,76 @@ export async function registerRoutes(app: Express): Promise<Server> {
   await setupAuth(app);
 
   // Auth routes
-  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
+  app.post('/api/auth/login', async (req, res) => {
     try {
-      const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
-      res.json(user);
+      const { username, password } = loginSchema.parse(req.body);
+      
+      const user = await storage.getUserByUsername(username);
+      if (!user) {
+        return res.status(401).json({ message: "Usuario o contraseña incorrectos" });
+      }
+
+      const isValidPassword = await comparePassword(password, user.password);
+      if (!isValidPassword) {
+        return res.status(401).json({ message: "Usuario o contraseña incorrectos" });
+      }
+
+      const session = req.session as any;
+      session.userId = user.id;
+
+      // Log the login activity
+      await storage.logActivity(user.id, 'login', `Usuario ${username} inició sesión`);
+
+      res.json({ 
+        message: "Inicio de sesión exitoso",
+        user: {
+          id: user.id,
+          username: user.username,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          email: user.email,
+          role: user.role
+        }
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: "Datos inválidos", errors: error.errors });
+      } else {
+        console.error("Error during login:", error);
+        res.status(500).json({ message: "Error del servidor" });
+      }
+    }
+  });
+
+  app.post('/api/auth/logout', (req, res) => {
+    const session = req.session as any;
+    session.destroy((err: any) => {
+      if (err) {
+        return res.status(500).json({ message: "Error al cerrar sesión" });
+      }
+      res.json({ message: "Sesión cerrada exitosamente" });
+    });
+  });
+
+  app.get('/api/auth/user', requireAuth, async (req: any, res) => {
+    try {
+      const user = req.user;
+      res.json({
+        id: user.id,
+        username: user.username,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        role: user.role
+      });
     } catch (error) {
       console.error("Error fetching user:", error);
-      res.status(500).json({ message: "Failed to fetch user" });
+      res.status(500).json({ message: "Error al obtener información del usuario" });
     }
   });
 
   // Dashboard routes
-  app.get('/api/dashboard/stats', isAuthenticated, async (req: any, res) => {
+  app.get('/api/dashboard/stats', requireAuth, async (req: any, res) => {
     try {
       const stats = await storage.getDashboardStats();
       res.json(stats);
@@ -40,7 +97,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/dashboard/activities', isAuthenticated, async (req: any, res) => {
+  app.get('/api/dashboard/activities', requireAuth, async (req: any, res) => {
     try {
       const activities = await storage.getRecentActivities();
       res.json(activities);
@@ -50,7 +107,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/dashboard/weekly-activity', isAuthenticated, async (req: any, res) => {
+  app.get('/api/dashboard/weekly-activity', requireAuth, async (req: any, res) => {
     try {
       const weeklyActivity = await storage.getWeeklyActivity();
       res.json(weeklyActivity);
@@ -61,12 +118,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Detainee routes
-  app.post('/api/detainees', isAuthenticated, upload.fields([
+  app.post('/api/detainees', requireAuth, upload.fields([
     { name: 'photo', maxCount: 1 },
     { name: 'idDocument', maxCount: 1 }
   ]), async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const validatedData = insertDetaineeSchema.parse(req.body);
       
       // Handle file uploads (in a real app, you'd upload to cloud storage)
@@ -104,7 +161,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/detainees', isAuthenticated, async (req: any, res) => {
+  app.get('/api/detainees', requireAuth, async (req: any, res) => {
     try {
       const detainees = await storage.getAllDetainees();
       res.json(detainees);
@@ -114,7 +171,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/detainees/:id', isAuthenticated, async (req: any, res) => {
+  app.get('/api/detainees/:id', requireAuth, async (req: any, res) => {
     try {
       const id = parseInt(req.params.id);
       if (isNaN(id)) {
@@ -134,16 +191,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Search routes
-  app.post('/api/search', isAuthenticated, async (req: any, res) => {
+  app.post('/api/search', requireAuth, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
-      const { cedula } = searchDetaineeSchema.parse(req.body);
+      const userId = req.user.id;
+      const searchCriteria = searchDetaineeSchema.parse(req.body);
       
-      const results = await storage.searchDetaineesByCedula(cedula);
+      const results = await storage.searchDetainees(searchCriteria);
       
       // Log the search
-      await storage.logSearch(userId, cedula, results.length);
-      await storage.logActivity(userId, 'search', `Searched for cedula: ${cedula}`);
+      const searchTerm = searchCriteria.cedula || searchCriteria.fullName || 'advanced search';
+      await storage.logSearch(userId, searchTerm, results.length);
+      await storage.logActivity(userId, 'search', `Searched with criteria: ${JSON.stringify(searchCriteria)}`);
 
       res.json(results);
     } catch (error) {
@@ -157,7 +215,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // OCR simulation endpoint for ID document processing
-  app.post('/api/ocr/process', isAuthenticated, upload.single('document'), async (req: any, res) => {
+  app.post('/api/ocr/process', requireAuth, upload.single('document'), async (req: any, res) => {
     try {
       // Simulate OCR processing
       // In a real application, you would use an OCR service like Tesseract or cloud OCR APIs
