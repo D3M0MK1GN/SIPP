@@ -48,6 +48,7 @@ export const detainees = pgTable("detainees", {
   municipality: varchar("municipality").notNull(),
   parish: varchar("parish").notNull(),
   address: text("address").notNull(),
+  registro: text("registro"),
   phone: varchar("phone"),
   photoUrl: varchar("photo_url"),
   idDocumentUrl: varchar("id_document_url"),

@@ -9,9 +9,9 @@ import { isUnauthorizedError } from "@/lib/authUtils";
 
 export default function Dashboard() {
   const { toast } = useToast();
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAuth();
 
-  // Redirect to home if not authenticated
+  // Redirect to home if not authenticated or not admin
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
       toast({
@@ -24,7 +24,19 @@ export default function Dashboard() {
       }, 500);
       return;
     }
-  }, [isAuthenticated, isLoading, toast]);
+    
+    if (!isLoading && isAuthenticated && user && user.role !== 'admin') {
+      toast({
+        title: "Acceso Denegado",
+        description: "Solo los administradores pueden acceder al dashboard",
+        variant: "destructive",
+      });
+      setTimeout(() => {
+        window.location.href = "/search";
+      }, 500);
+      return;
+    }
+  }, [isAuthenticated, isLoading, user, toast]);
 
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ["/api/dashboard/stats"],

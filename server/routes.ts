@@ -86,8 +86,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Dashboard routes
-  app.get('/api/dashboard/stats', requireAuth, async (req: any, res) => {
+  // Admin middleware
+  const requireAdmin = (req: any, res: any, next: any) => {
+    if (!req.user || req.user.role !== 'admin') {
+      return res.status(403).json({ message: "Acceso denegado - Solo administradores" });
+    }
+    next();
+  };
+
+  // Dashboard routes (Admin only)
+  app.get('/api/dashboard/stats', requireAuth, requireAdmin, async (req: any, res) => {
     try {
       const stats = await storage.getDashboardStats();
       res.json(stats);
@@ -97,7 +105,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/dashboard/activities', requireAuth, async (req: any, res) => {
+  app.get('/api/dashboard/activities', requireAuth, requireAdmin, async (req: any, res) => {
     try {
       const activities = await storage.getRecentActivities();
       res.json(activities);
@@ -107,7 +115,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/dashboard/weekly-activity', requireAuth, async (req: any, res) => {
+  app.get('/api/dashboard/weekly-activity', requireAuth, requireAdmin, async (req: any, res) => {
     try {
       const weeklyActivity = await storage.getWeeklyActivity();
       res.json(weeklyActivity);
@@ -199,9 +207,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const results = await storage.searchDetainees(searchCriteria);
       
       // Log the search
-      const searchTerm = searchCriteria.cedula || searchCriteria.fullName || 'advanced search';
+      const searchTerm = searchCriteria.cedula || 'simple search';
       await storage.logSearch(userId, searchTerm, results.length);
-      await storage.logActivity(userId, 'search', `Searched with criteria: ${JSON.stringify(searchCriteria)}`);
+      await storage.logActivity(userId, 'search', `Simple search with cedula: ${searchCriteria.cedula}`);
 
       res.json(results);
     } catch (error) {
@@ -211,6 +219,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.error("Error searching detainees:", error);
         res.status(500).json({ message: "Failed to search detainee records" });
       }
+    }
+  });
+
+  // Advanced search route
+  app.post('/api/search/advanced', requireAuth, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const searchCriteria = req.body;
+      
+      // Validate that at least one search criteria is provided
+      const hasValidCriteria = Object.values(searchCriteria).some(value => 
+        value && typeof value === 'string' && value.trim() !== ''
+      );
+      
+      if (!hasValidCriteria) {
+        return res.status(400).json({ message: "Debe proporcionar al menos un criterio de búsqueda" });
+      }
+      
+      const results = await storage.searchDetainees(searchCriteria);
+      
+      // Log the search
+      const searchTerms = Object.entries(searchCriteria)
+        .filter(([_, value]) => value && value.toString().trim() !== '')
+        .map(([key, value]) => `${key}: ${value}`)
+        .join(', ');
+      
+      await storage.logSearch(userId, `Advanced: ${searchTerms}`, results.length);
+      await storage.logActivity(userId, 'advanced_search', `Advanced search with criteria: ${JSON.stringify(searchCriteria)}`);
+
+      res.json(results);
+    } catch (error) {
+      console.error("Error in advanced search:", error);
+      res.status(500).json({ message: "Error en la búsqueda avanzada" });
     }
   });
 

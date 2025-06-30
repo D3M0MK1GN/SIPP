@@ -75,7 +75,10 @@ export default function Register() {
       cedula: "",
       birthDate: "",
       state: "",
+      municipality: "",
+      parish: "",
       address: "",
+      registro: "",
       phone: "",
     },
   });
@@ -185,12 +188,33 @@ export default function Register() {
   const handleDetaineePhotoCapture = (imageData: string) => {
     setDetaineePhoto(imageData);
     // Convert base64 to file
-    fetch(imageData)
-      .then(res => res.blob())
-      .then(blob => {
-        const file = new File([blob], 'detainee-photo.jpg', { type: 'image/jpeg' });
-        setDetaineePhotoFile(file);
+    try {
+      fetch(imageData)
+        .then(res => res.blob())
+        .then(blob => {
+          const file = new File([blob], 'detainee-photo.jpg', { type: 'image/jpeg' });
+          setDetaineePhotoFile(file);
+          toast({
+            title: "Foto capturada",
+            description: "La foto del detenido se ha capturado correctamente",
+          });
+        })
+        .catch(error => {
+          console.error("Error processing captured photo:", error);
+          toast({
+            title: "Error",
+            description: "No se pudo procesar la foto capturada",
+            variant: "destructive",
+          });
+        });
+    } catch (error) {
+      console.error("Error converting image:", error);
+      toast({
+        title: "Error",
+        description: "Error al procesar la imagen",
+        variant: "destructive",
       });
+    }
   };
 
   const handleDetaineePhotoUpload = (file: File) => {
@@ -205,13 +229,34 @@ export default function Register() {
   const handleIdDocumentCapture = (imageData: string) => {
     setIdDocument(imageData);
     // Convert base64 to file and process with OCR
-    fetch(imageData)
-      .then(res => res.blob())
-      .then(blob => {
-        const file = new File([blob], 'id-document.jpg', { type: 'image/jpeg' });
-        setIdDocumentFile(file);
-        ocrMutation.mutate(file);
+    try {
+      fetch(imageData)
+        .then(res => res.blob())
+        .then(blob => {
+          const file = new File([blob], 'id-document.jpg', { type: 'image/jpeg' });
+          setIdDocumentFile(file);
+          toast({
+            title: "Documento capturado",
+            description: "Procesando documento para extraer datos...",
+          });
+          ocrMutation.mutate(file);
+        })
+        .catch(error => {
+          console.error("Error processing captured document:", error);
+          toast({
+            title: "Error",
+            description: "No se pudo procesar el documento capturado",
+            variant: "destructive",
+          });
+        });
+    } catch (error) {
+      console.error("Error converting document image:", error);
+      toast({
+        title: "Error",
+        description: "Error al procesar la imagen del documento",
+        variant: "destructive",
       });
+    }
   };
 
   const handleIdDocumentUpload = (file: File) => {
@@ -248,13 +293,13 @@ export default function Register() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       <Navigation />
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-20 md:pb-8">
         <div className="mb-8">
-          <h2 className="text-3xl font-bold text-gray-700 mb-2">Registrar Detenido</h2>
-          <p className="text-gray-600">Complete el formulario con los datos del detenido</p>
+          <h2 className="text-3xl font-bold text-foreground mb-2">Registrar Detenido</h2>
+          <p className="text-muted-foreground">Complete el formulario con los datos del detenido</p>
         </div>
 
         <Form {...form}>
@@ -334,6 +379,34 @@ export default function Register() {
                         )}
                       />
 
+                      <FormField
+                        control={form.control}
+                        name="municipality"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Municipio *</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Ingrese municipio" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="parish"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Parroquia *</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Ingrese parroquia" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
                       <div className="md:col-span-2">
                         <FormField
                           control={form.control}
@@ -343,6 +416,22 @@ export default function Register() {
                               <FormLabel>Dirección *</FormLabel>
                               <FormControl>
                                 <Textarea placeholder="Ingrese dirección completa" rows={3} {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+
+                      <div className="md:col-span-2">
+                        <FormField
+                          control={form.control}
+                          name="registro"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Registro</FormLabel>
+                              <FormControl>
+                                <Textarea placeholder="Ingrese información de registro" rows={3} {...field} />
                               </FormControl>
                               <FormMessage />
                             </FormItem>

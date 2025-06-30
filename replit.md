@@ -121,6 +121,12 @@ Preferred communication style: Simple, everyday language.
 - June 30, 2025: Added responsive navigation with theme toggle (light/dark mode)
 - June 30, 2025: Enhanced database schema with municipality and parish fields for detainees
 - June 30, 2025: Improved mobile responsiveness with collapsible menu
+- June 30, 2025: Fixed camera capture functionality with better error handling
+- June 30, 2025: Added municipality and parish fields to detainee registration form
+- June 30, 2025: Corrected dark theme implementation across all pages
+- June 30, 2025: Added "registro" field to detainee registration form and database schema
+- June 30, 2025: Implemented advanced search functionality with multiple criteria (name, state, municipality, parish)
+- June 30, 2025: Restricted dashboard access to administrators only with role-based navigation
 
 ## Changelog
 

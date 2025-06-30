@@ -68,8 +68,12 @@
   }
 
   body {
-    @apply font-sans antialiased bg-police-background text-foreground;
-    background-color: hsl(210, 20%, 98%);
+    @apply font-sans antialiased text-foreground;
+    background-color: var(--background);
+  }
+  
+  .dark body {
+    background-color: var(--background);
   }
 
   /* Custom styles for police theme */

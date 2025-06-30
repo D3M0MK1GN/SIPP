@@ -20,11 +20,19 @@ export function Navigation() {
     return 'light';
   });
 
-  const navItems = [
-    { path: "/", icon: BarChart3, label: "Dashboard", id: "dashboard" },
-    { path: "/register", icon: UserPlus, label: "Registrar", id: "register" },
-    { path: "/search", icon: Search, label: "Buscar", id: "search" },
+  const allNavItems = [
+    { path: "/", icon: BarChart3, label: "Dashboard", id: "dashboard", adminOnly: true },
+    { path: "/register", icon: UserPlus, label: "Registrar", id: "register", adminOnly: false },
+    { path: "/search", icon: Search, label: "Buscar", id: "search", adminOnly: false },
   ];
+
+  // Filter navigation items based on user role
+  const navItems = allNavItems.filter(item => {
+    if (item.adminOnly) {
+      return user?.role === 'admin';
+    }
+    return true;
+  });
 
   const isActive = (path: string) => {
     if (path === "/" && location === "/") return true;

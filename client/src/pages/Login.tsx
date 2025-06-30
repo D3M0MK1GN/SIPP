@@ -58,7 +58,7 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center relative">
+    <div className="min-h-screen bg-background flex items-center justify-center relative">
       {/* Theme Toggle */}
       <Button
         variant="ghost"
@@ -74,10 +74,10 @@ export default function Login() {
           <div className="flex justify-center mb-4">
             <Shield className="w-16 h-16 text-blue-600" />
           </div>
-          <CardTitle className="text-2xl font-bold text-gray-900 dark:text-white">
+          <CardTitle className="text-2xl font-bold text-foreground">
             Sistema Policial
           </CardTitle>
-          <p className="text-gray-600 dark:text-gray-400 mt-2">
+          <p className="text-muted-foreground mt-2">
             Gestión de Registros Policiales
           </p>
         </CardHeader>
