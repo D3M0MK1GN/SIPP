@@ -32,7 +32,10 @@ export const users = pgTable("users", {
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
   email: varchar("email"),
-  role: varchar("role").default("officer"),
+  role: varchar("role").default("officer"), // 'admin', 'officer'
+  status: varchar("status").default("active"), // 'active', 'suspended'
+  suspendedUntil: timestamp("suspended_until"),
+  suspendedReason: text("suspended_reason"),
   profileImageUrl: varchar("profile_image_url"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -90,6 +93,36 @@ export const registerUserSchema = z.object({
   firstName: z.string().min(1, "Nombre es requerido"),
   lastName: z.string().min(1, "Apellido es requerido"),
   email: z.string().email("Email inválido").optional(),
+});
+
+// Admin user management schemas
+export const createUserSchema = z.object({
+  username: z.string().min(3, "Usuario debe tener al menos 3 caracteres"),
+  password: z.string().min(6, "Contraseña debe tener al menos 6 caracteres"),
+  firstName: z.string().min(1, "Nombre es requerido"),
+  lastName: z.string().min(1, "Apellido es requerido"),
+  email: z.string().email("Email inválido").optional(),
+  role: z.enum(["admin", "officer"], { message: "Rol inválido" }),
+});
+
+export const updateUserSchema = z.object({
+  username: z.string().min(3, "Usuario debe tener al menos 3 caracteres").optional(),
+  firstName: z.string().min(1, "Nombre es requerido").optional(),
+  lastName: z.string().min(1, "Apellido es requerido").optional(),
+  email: z.string().email("Email inválido").optional(),
+  role: z.enum(["admin", "officer"], { message: "Rol inválido" }).optional(),
+  status: z.enum(["active", "suspended"], { message: "Estado inválido" }).optional(),
+});
+
+export const suspendUserSchema = z.object({
+  suspendedUntil: z.string().min(1, "Fecha de suspensión requerida"),
+  suspendedReason: z.string().min(1, "Motivo de suspensión requerido"),
+});
+
+export const searchUserSchema = z.object({
+  username: z.string().optional(),
+  role: z.enum(["admin", "officer"]).optional(),
+  status: z.enum(["active", "suspended"]).optional(),
 });
 
 export const insertDetaineeSchema = createInsertSchema(detainees).omit({

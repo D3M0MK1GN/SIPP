@@ -20,6 +20,18 @@ export interface IStorage {
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: UpsertUser): Promise<User>;
   
+  // Admin user management operations
+  getAllUsers(): Promise<User[]>;
+  searchUsers(criteria: {
+    username?: string;
+    role?: string;
+    status?: string;
+  }): Promise<User[]>;
+  updateUser(id: number, user: Partial<UpsertUser>): Promise<User>;
+  deleteUser(id: number): Promise<void>;
+  suspendUser(id: number, suspendedUntil: Date, reason: string): Promise<User>;
+  reactivateUser(id: number): Promise<User>;
+  
   // Detainee operations
   createDetainee(detainee: InsertDetainee & { registeredBy: number }): Promise<Detainee>;
   searchDetainees(criteria: {
@@ -217,6 +229,80 @@ export class DatabaseStorage implements IStorage {
       day: activity.day,
       count: activity.count
     }));
+  }
+
+  // Admin user management implementations
+  async getAllUsers(): Promise<User[]> {
+    return await db
+      .select()
+      .from(users)
+      .orderBy(desc(users.createdAt));
+  }
+
+  async searchUsers(criteria: {
+    username?: string;
+    role?: string;
+    status?: string;
+  }): Promise<User[]> {
+    let query = db.select().from(users);
+    
+    const conditions = [];
+    if (criteria.username) {
+      conditions.push(ilike(users.username, `%${criteria.username}%`));
+    }
+    if (criteria.role) {
+      conditions.push(eq(users.role, criteria.role));
+    }
+    if (criteria.status) {
+      conditions.push(eq(users.status, criteria.status));
+    }
+
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions)) as any;
+    }
+
+    return await query.orderBy(desc(users.createdAt));
+  }
+
+  async updateUser(id: number, userData: Partial<UpsertUser>): Promise<User> {
+    const [user] = await db
+      .update(users)
+      .set({ ...userData, updatedAt: new Date() })
+      .where(eq(users.id, id))
+      .returning();
+    return user;
+  }
+
+  async deleteUser(id: number): Promise<void> {
+    await db.delete(users).where(eq(users.id, id));
+  }
+
+  async suspendUser(id: number, suspendedUntil: Date, reason: string): Promise<User> {
+    const [user] = await db
+      .update(users)
+      .set({
+        status: "suspended",
+        suspendedUntil,
+        suspendedReason: reason,
+        updatedAt: new Date()
+      })
+      .where(eq(users.id, id))
+      .returning();
+    return user;
+  }
+
+  async reactivateUser(id: number): Promise<User> {
+    const [user] = await db
+      .update(users)
+      .set({
+        status: "active",
+        suspendedUntil: null,
+        suspendedReason: null,
+        updatedAt: new Date()
+      })
+      .where(eq(users.id, id))
+      .returning();
+    return user;
   }
 }
 

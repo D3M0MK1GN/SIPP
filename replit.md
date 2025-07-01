@@ -127,6 +127,13 @@ Preferred communication style: Simple, everyday language.
 - June 30, 2025: Added "registro" field to detainee registration form and database schema
 - June 30, 2025: Implemented advanced search functionality with multiple criteria (name, state, municipality, parish)
 - June 30, 2025: Restricted dashboard access to administrators only with role-based navigation
+- June 30, 2025: Migrated from Replit Agent to standard Replit environment with fixed navigation layout
+- June 30, 2025: Implemented Layout component with fixed navigation bar and scrollable content area
+- June 30, 2025: Fixed JSX syntax errors in Register.tsx and Search.tsx using JSX fragments
+- June 30, 2025: Added comprehensive user management system for administrators
+- June 30, 2025: Extended user schema with status, suspension, and admin management fields
+- June 30, 2025: Implemented admin-only user creation, editing, suspension, and deletion features
+- June 30, 2025: Added mobile-compatible camera capture improvements for Android devices
 
 ## Changelog
 

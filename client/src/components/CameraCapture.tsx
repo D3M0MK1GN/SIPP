@@ -29,7 +29,7 @@ export function CameraCapture({
 
   // Check camera support on mount
   useEffect(() => {
-    if (!navigator.mediaDevices) {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       setError("Su navegador no soporta acceso a la cámara");
       setHasPermission(false);
     }

@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Navigation } from "@/components/Navigation";
 import { CameraCapture } from "@/components/CameraCapture";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -293,10 +292,8 @@ export default function Register() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navigation />
-      
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-20 md:pb-8">
+    <>
+      <div className="max-w-7xl mx-auto">
         <div className="mb-8">
           <h2 className="text-3xl font-bold text-foreground mb-2">Registrar Detenido</h2>
           <p className="text-muted-foreground">Complete el formulario con los datos del detenido</p>
@@ -304,10 +301,10 @@ export default function Register() {
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              {/* Personal Information */}
-              <div className="lg:col-span-2">
-                <Card>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Personal Information */}
+            <div className="lg:col-span-2">
+              <Card>
                   <CardContent className="p-6">
                     <h3 className="text-lg font-semibold text-gray-700 mb-6">Información Personal</h3>
                     
@@ -540,6 +537,6 @@ export default function Register() {
           </form>
         </Form>
       </div>
-    </div>
+    </>
   );
 }

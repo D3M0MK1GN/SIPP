@@ -1,4 +1,4 @@
-import { Shield, BarChart3, UserPlus, Search, User, LogOut, Sun, Moon, Menu, X } from "lucide-react";
+import { Shield, BarChart3, UserPlus, Search, User, LogOut, Sun, Moon, Menu, X, Users } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -24,6 +24,7 @@ export function Navigation() {
     { path: "/", icon: BarChart3, label: "Dashboard", id: "dashboard", adminOnly: true },
     { path: "/register", icon: UserPlus, label: "Registrar", id: "register", adminOnly: false },
     { path: "/search", icon: Search, label: "Buscar", id: "search", adminOnly: false },
+    { path: "/admin/users", icon: Users, label: "Gestión de Usuarios", id: "admin-users", adminOnly: true },
   ];
 
   // Filter navigation items based on user role

@@ -2,7 +2,16 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, requireAuth, comparePassword } from "./auth";
-import { insertDetaineeSchema, searchDetaineeSchema, loginSchema, registerUserSchema } from "@shared/schema";
+import { 
+  insertDetaineeSchema, 
+  searchDetaineeSchema, 
+  loginSchema, 
+  registerUserSchema,
+  createUserSchema,
+  updateUserSchema,
+  suspendUserSchema,
+  searchUserSchema
+} from "@shared/schema";
 import multer from "multer";
 import { z } from "zod";
 
@@ -271,6 +280,156 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error processing OCR:", error);
       res.status(500).json({ message: "Failed to process document" });
+    }
+  });
+
+  // Admin user management routes
+
+  // Get all users (admin only)
+  app.get('/api/admin/users', requireAuth, requireAdmin, async (req, res) => {
+    try {
+      const users = await storage.getAllUsers();
+      // Remove password from response
+      const safeUsers = users.map(({ password, ...user }) => user);
+      res.json(safeUsers);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      res.status(500).json({ message: "Error al obtener usuarios" });
+    }
+  });
+
+  // Search users (admin only)
+  app.post('/api/admin/users/search', requireAuth, requireAdmin, async (req, res) => {
+    try {
+      const criteria = searchUserSchema.parse(req.body);
+      const users = await storage.searchUsers(criteria);
+      // Remove password from response
+      const safeUsers = users.map(({ password, ...user }) => user);
+      res.json(safeUsers);
+    } catch (error) {
+      console.error("Error searching users:", error);
+      res.status(500).json({ message: "Error al buscar usuarios" });
+    }
+  });
+
+  // Create new user (admin only)
+  app.post('/api/admin/users', requireAuth, requireAdmin, async (req, res) => {
+    try {
+      const userData = createUserSchema.parse(req.body);
+      
+      // Check if username already exists
+      const existingUser = await storage.getUserByUsername(userData.username);
+      if (existingUser) {
+        return res.status(400).json({ message: "El nombre de usuario ya existe" });
+      }
+
+      // Hash password before storing
+      const { hashPassword } = await import("./auth");
+      const hashedPassword = await hashPassword(userData.password);
+      
+      const user = await storage.createUser({
+        ...userData,
+        password: hashedPassword
+      });
+
+      // Log activity
+      await storage.logActivity(req.session.userId, 'create_user', `Creó usuario ${userData.username}`);
+
+      // Remove password from response
+      const { password, ...safeUser } = user;
+      res.json(safeUser);
+    } catch (error) {
+      console.error("Error creating user:", error);
+      res.status(500).json({ message: "Error al crear usuario" });
+    }
+  });
+
+  // Update user (admin only)
+  app.put('/api/admin/users/:id', requireAuth, requireAdmin, async (req, res) => {
+    try {
+      const userId = parseInt(req.params.id);
+      const userData = updateUserSchema.parse(req.body);
+      
+      // Check if updating username and it already exists
+      if (userData.username) {
+        const existingUser = await storage.getUserByUsername(userData.username);
+        if (existingUser && existingUser.id !== userId) {
+          return res.status(400).json({ message: "El nombre de usuario ya existe" });
+        }
+      }
+
+      const user = await storage.updateUser(userId, userData);
+      
+      // Log activity
+      await storage.logActivity(req.session.userId, 'update_user', `Actualizó usuario ID ${userId}`);
+
+      // Remove password from response
+      const { password, ...safeUser } = user;
+      res.json(safeUser);
+    } catch (error) {
+      console.error("Error updating user:", error);
+      res.status(500).json({ message: "Error al actualizar usuario" });
+    }
+  });
+
+  // Suspend user (admin only)
+  app.post('/api/admin/users/:id/suspend', requireAuth, requireAdmin, async (req, res) => {
+    try {
+      const userId = parseInt(req.params.id);
+      const { suspendedUntil, suspendedReason } = suspendUserSchema.parse(req.body);
+      
+      const suspendDate = new Date(suspendedUntil);
+      const user = await storage.suspendUser(userId, suspendDate, suspendedReason);
+      
+      // Log activity
+      await storage.logActivity(req.session.userId, 'suspend_user', `Suspendió usuario ID ${userId} hasta ${suspendedUntil}`);
+
+      // Remove password from response
+      const { password, ...safeUser } = user;
+      res.json(safeUser);
+    } catch (error) {
+      console.error("Error suspending user:", error);
+      res.status(500).json({ message: "Error al suspender usuario" });
+    }
+  });
+
+  // Reactivate user (admin only)
+  app.post('/api/admin/users/:id/reactivate', requireAuth, requireAdmin, async (req, res) => {
+    try {
+      const userId = parseInt(req.params.id);
+      const user = await storage.reactivateUser(userId);
+      
+      // Log activity
+      await storage.logActivity(req.session.userId, 'reactivate_user', `Reactivó usuario ID ${userId}`);
+
+      // Remove password from response
+      const { password, ...safeUser } = user;
+      res.json(safeUser);
+    } catch (error) {
+      console.error("Error reactivating user:", error);
+      res.status(500).json({ message: "Error al reactivar usuario" });
+    }
+  });
+
+  // Delete user (admin only)
+  app.delete('/api/admin/users/:id', requireAuth, requireAdmin, async (req, res) => {
+    try {
+      const userId = parseInt(req.params.id);
+      
+      // Prevent admin from deleting themselves
+      if (userId === req.session.userId) {
+        return res.status(400).json({ message: "No puedes eliminarte a ti mismo" });
+      }
+
+      await storage.deleteUser(userId);
+      
+      // Log activity
+      await storage.logActivity(req.session.userId, 'delete_user', `Eliminó usuario ID ${userId}`);
+
+      res.json({ message: "Usuario eliminado exitosamente" });
+    } catch (error) {
+      console.error("Error deleting user:", error);
+      res.status(500).json({ message: "Error al eliminar usuario" });
     }
   });
 

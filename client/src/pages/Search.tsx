@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Navigation } from "@/components/Navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -190,17 +189,15 @@ export default function Search() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navigation />
-      
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-20 md:pb-8">
+    <>
+      <div className="max-w-7xl mx-auto">
         <div className="mb-8">
           <h2 className="text-3xl font-bold text-foreground mb-2">Buscar Registros</h2>
           <p className="text-muted-foreground">Busque registros por número de cédula</p>
         </div>
 
-        {/* Search Forms */}
-        <Card className="mb-8">
+      {/* Search Forms */}
+      <Card className="mb-8">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <SearchIcon className="h-5 w-5" />
@@ -562,6 +559,6 @@ export default function Search() {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </>
   );
 }
