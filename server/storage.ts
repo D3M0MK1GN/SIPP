@@ -50,6 +50,10 @@ export interface IStorage {
   // Activity logging
   logActivity(userId: number, action: string, description?: string): Promise<ActivityLog>;
   
+  // Session management
+  updateUserSession(userId: number, sessionId: string | null): Promise<User>;
+  getUserBySessionId(sessionId: string): Promise<User | undefined>;
+  
   // Dashboard statistics
   getDashboardStats(): Promise<{
     totalRecords: number;
@@ -274,6 +278,11 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteUser(id: number): Promise<void> {
+    // Primero eliminar los registros relacionados para evitar violaciones de clave foránea
+    await db.delete(activityLogs).where(eq(activityLogs.userId, id));
+    await db.delete(searchLogs).where(eq(searchLogs.userId, id));
+    
+    // Luego eliminar el usuario
     await db.delete(users).where(eq(users.id, id));
   }
 
@@ -302,6 +311,27 @@ export class DatabaseStorage implements IStorage {
       })
       .where(eq(users.id, id))
       .returning();
+    return user;
+  }
+
+  async updateUserSession(userId: number, sessionId: string | null): Promise<User> {
+    const [user] = await db
+      .update(users)
+      .set({
+        activeSessionId: sessionId,
+        updatedAt: new Date()
+      })
+      .where(eq(users.id, userId))
+      .returning();
+    return user;
+  }
+
+  async getUserBySessionId(sessionId: string): Promise<User | undefined> {
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.activeSessionId, sessionId))
+      .limit(1);
     return user;
   }
 }

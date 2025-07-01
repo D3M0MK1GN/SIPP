@@ -41,8 +41,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Usuario o contraseña incorrectos" });
       }
 
+      // Verificar si el usuario ya tiene una sesión activa
+      if (user.activeSessionId) {
+        return res.status(409).json({ 
+          message: "Este usuario ya tiene una sesión activa en otro dispositivo. Cierre la sesión anterior para continuar." 
+        });
+      }
+
       const session = req.session as any;
       session.userId = user.id;
+
+      // Actualizar el usuario con el nuevo ID de sesión
+      await storage.updateUserSession(user.id, session.id);
 
       // Log the login activity
       await storage.logActivity(user.id, 'login', `Usuario ${username} inició sesión`);
@@ -68,14 +78,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/auth/logout', (req, res) => {
-    const session = req.session as any;
-    session.destroy((err: any) => {
-      if (err) {
-        return res.status(500).json({ message: "Error al cerrar sesión" });
+  app.post('/api/auth/logout', async (req, res) => {
+    try {
+      const session = req.session as any;
+      const userId = session.userId;
+      
+      // Limpiar la sesión activa del usuario en la base de datos
+      if (userId) {
+        await storage.updateUserSession(userId, null);
+        await storage.logActivity(userId, 'logout', 'Usuario cerró sesión');
       }
-      res.json({ message: "Sesión cerrada exitosamente" });
-    });
+      
+      session.destroy((err: any) => {
+        if (err) {
+          return res.status(500).json({ message: "Error al cerrar sesión" });
+        }
+        res.json({ message: "Sesión cerrada exitosamente" });
+      });
+    } catch (error) {
+      console.error("Error during logout:", error);
+      res.status(500).json({ message: "Error al cerrar sesión" });
+    }
   });
 
   app.get('/api/auth/user', requireAuth, async (req: any, res) => {
@@ -103,8 +126,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     next();
   };
 
-  // Dashboard routes (Admin only)
-  app.get('/api/dashboard/stats', requireAuth, requireAdmin, async (req: any, res) => {
+  // Role-based middleware
+  const requireSupervisorOrAdmin = (req: any, res: any, next: any) => {
+    if (!req.user || (req.user.role !== 'admin' && req.user.role !== 'supervisor')) {
+      return res.status(403).json({ message: "Acceso denegado - Solo administradores y supervisores" });
+    }
+    next();
+  };
+
+  const requireRegistrationAccess = (req: any, res: any, next: any) => {
+    const allowedRoles = ['admin', 'officer', 'supervisor'];
+    if (!req.user || !allowedRoles.includes(req.user.role)) {
+      return res.status(403).json({ message: "Acceso denegado - Sin permisos para registrar" });
+    }
+    next();
+  };
+
+  const requireSearchAccess = (req: any, res: any, next: any) => {
+    const allowedRoles = ['admin', 'officer', 'supervisor', 'agent'];
+    if (!req.user || !allowedRoles.includes(req.user.role)) {
+      return res.status(403).json({ message: "Acceso denegado - Sin permisos para buscar" });
+    }
+    next();
+  };
+
+  // Dashboard routes (Admin and Supervisor)
+  app.get('/api/dashboard/stats', requireAuth, requireSupervisorOrAdmin, async (req: any, res) => {
     try {
       const stats = await storage.getDashboardStats();
       res.json(stats);
@@ -114,7 +161,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/dashboard/activities', requireAuth, requireAdmin, async (req: any, res) => {
+  app.get('/api/dashboard/activities', requireAuth, requireSupervisorOrAdmin, async (req: any, res) => {
     try {
       const activities = await storage.getRecentActivities();
       res.json(activities);
@@ -124,7 +171,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/dashboard/weekly-activity', requireAuth, requireAdmin, async (req: any, res) => {
+  app.get('/api/dashboard/weekly-activity', requireAuth, requireSupervisorOrAdmin, async (req: any, res) => {
     try {
       const weeklyActivity = await storage.getWeeklyActivity();
       res.json(weeklyActivity);
@@ -135,7 +182,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Detainee routes
-  app.post('/api/detainees', requireAuth, upload.fields([
+  app.post('/api/detainees', requireAuth, requireRegistrationAccess, upload.fields([
     { name: 'photo', maxCount: 1 },
     { name: 'idDocument', maxCount: 1 }
   ]), async (req: any, res) => {
@@ -208,7 +255,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Search routes
-  app.post('/api/search', requireAuth, async (req: any, res) => {
+  app.post('/api/search', requireAuth, requireSearchAccess, async (req: any, res) => {
     try {
       const userId = req.user.id;
       const searchCriteria = searchDetaineeSchema.parse(req.body);
@@ -232,7 +279,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Advanced search route
-  app.post('/api/search/advanced', requireAuth, async (req: any, res) => {
+  app.post('/api/search/advanced', requireAuth, requireSearchAccess, async (req: any, res) => {
     try {
       const userId = req.user.id;
       const searchCriteria = req.body;

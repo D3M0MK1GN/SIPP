@@ -134,6 +134,14 @@ Preferred communication style: Simple, everyday language.
 - June 30, 2025: Extended user schema with status, suspension, and admin management fields
 - June 30, 2025: Implemented admin-only user creation, editing, suspension, and deletion features
 - June 30, 2025: Added mobile-compatible camera capture improvements for Android devices
+- July 1, 2025: Successfully migrated from Replit Agent to standard Replit environment
+- July 1, 2025: Fixed API request methods in AdminUsers.tsx (corrected apiRequest function calls)
+- July 1, 2025: Changed role display from "Oficial" to "Investigador" throughout the admin interface
+- July 1, 2025: Implemented role-based routing - investigators redirect to registration page instead of dashboard
+- July 1, 2025: Improved login error messages to show "Usuario o Contraseña Incorrectos" instead of HTTP status codes
+- July 1, 2025: Implemented single-session authentication system to prevent multiple concurrent logins per user account
+- July 1, 2025: Added two new user roles: "supervisor" (access to all sections except user management) and "agent" (search access only)
+- July 1, 2025: Implemented role-based middleware for API endpoints with granular permissions
 
 ## Changelog
 

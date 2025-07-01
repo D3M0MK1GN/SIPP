@@ -105,10 +105,8 @@ export default function AdminUsers() {
   // Search users mutation
   const searchMutation = useMutation({
     mutationFn: async (criteria: z.infer<typeof searchUserSchema>) => {
-      return apiRequest("/api/admin/users/search", {
-        method: "POST",
-        body: JSON.stringify(criteria),
-      });
+      const res = await apiRequest("POST", "/api/admin/users/search", criteria);
+      return res.json();
     },
     onSuccess: (data) => {
       queryClient.setQueryData(["/api/admin/users"], data);
@@ -134,10 +132,8 @@ export default function AdminUsers() {
   // Create user mutation
   const createMutation = useMutation({
     mutationFn: async (userData: z.infer<typeof createUserSchema>) => {
-      return apiRequest("/api/admin/users", {
-        method: "POST",
-        body: JSON.stringify(userData),
-      });
+      const res = await apiRequest("POST", "/api/admin/users", userData);
+      return res.json();
     },
     onSuccess: () => {
       toast({
@@ -168,10 +164,8 @@ export default function AdminUsers() {
   // Update user mutation
   const updateMutation = useMutation({
     mutationFn: async ({ id, ...userData }: { id: number } & z.infer<typeof updateUserSchema>) => {
-      return apiRequest(`/api/admin/users/${id}`, {
-        method: "PUT",
-        body: JSON.stringify(userData),
-      });
+      const res = await apiRequest("PUT", `/api/admin/users/${id}`, userData);
+      return res.json();
     },
     onSuccess: () => {
       toast({
@@ -203,10 +197,8 @@ export default function AdminUsers() {
   // Suspend user mutation
   const suspendMutation = useMutation({
     mutationFn: async ({ id, ...suspendData }: { id: number } & z.infer<typeof suspendUserSchema>) => {
-      return apiRequest(`/api/admin/users/${id}/suspend`, {
-        method: "POST",
-        body: JSON.stringify(suspendData),
-      });
+      const res = await apiRequest("POST", `/api/admin/users/${id}/suspend`, suspendData);
+      return res.json();
     },
     onSuccess: () => {
       toast({
@@ -238,9 +230,8 @@ export default function AdminUsers() {
   // Reactivate user mutation
   const reactivateMutation = useMutation({
     mutationFn: async (id: number) => {
-      return apiRequest(`/api/admin/users/${id}/reactivate`, {
-        method: "POST",
-      });
+      const res = await apiRequest("POST", `/api/admin/users/${id}/reactivate`);
+      return res.json();
     },
     onSuccess: () => {
       toast({
@@ -269,9 +260,8 @@ export default function AdminUsers() {
   // Delete user mutation
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
-      return apiRequest(`/api/admin/users/${id}`, {
-        method: "DELETE",
-      });
+      const res = await apiRequest("DELETE", `/api/admin/users/${id}`);
+      return res.json();
     },
     onSuccess: () => {
       toast({
@@ -324,7 +314,7 @@ export default function AdminUsers() {
       firstName: user.firstName || "",
       lastName: user.lastName || "",
       email: user.email || "",
-      role: user.role as "admin" | "officer",
+      role: user.role as "admin" | "officer" | "supervisor" | "agent",
       status: user.status as "active" | "suspended"
     });
     setEditDialogOpen(true);
@@ -374,7 +364,7 @@ export default function AdminUsers() {
     );
   }
 
-  const users = usersQuery.data || [];
+  const users: User[] = usersQuery.data || [];
 
   return (
     <>
@@ -484,8 +474,10 @@ export default function AdminUsers() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="officer">Oficial</SelectItem>
                             <SelectItem value="admin">Administrador</SelectItem>
+                            <SelectItem value="supervisor">Supervisor</SelectItem>
+                            <SelectItem value="officer">Investigador</SelectItem>
+                            <SelectItem value="agent">Agente</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -547,8 +539,10 @@ export default function AdminUsers() {
                           </FormControl>
                           <SelectContent>
                             <SelectItem value="">Todos los roles</SelectItem>
-                            <SelectItem value="officer">Oficial</SelectItem>
                             <SelectItem value="admin">Administrador</SelectItem>
+                            <SelectItem value="supervisor">Supervisor</SelectItem>
+                            <SelectItem value="officer">Investigador</SelectItem>
+                            <SelectItem value="agent">Agente</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -638,7 +632,9 @@ export default function AdminUsers() {
                         <TableCell>{userRow.email || "N/A"}</TableCell>
                         <TableCell>
                           <Badge variant={userRow.role === 'admin' ? 'default' : 'secondary'}>
-                            {userRow.role === 'admin' ? 'Administrador' : 'Oficial'}
+                            {userRow.role === 'admin' ? 'Administrador' : 
+                             userRow.role === 'supervisor' ? 'Supervisor' :
+                             userRow.role === 'agent' ? 'Agente' : 'Investigador'}
                           </Badge>
                         </TableCell>
                         <TableCell>
@@ -787,8 +783,10 @@ export default function AdminUsers() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="officer">Oficial</SelectItem>
                           <SelectItem value="admin">Administrador</SelectItem>
+                          <SelectItem value="supervisor">Supervisor</SelectItem>
+                          <SelectItem value="officer">Investigador</SelectItem>
+                          <SelectItem value="agent">Agente</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />

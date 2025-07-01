@@ -32,11 +32,12 @@ export const users = pgTable("users", {
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
   email: varchar("email"),
-  role: varchar("role").default("officer"), // 'admin', 'officer'
+  role: varchar("role").default("officer"), // 'admin', 'officer', 'supervisor', 'agent'
   status: varchar("status").default("active"), // 'active', 'suspended'
   suspendedUntil: timestamp("suspended_until"),
   suspendedReason: text("suspended_reason"),
   profileImageUrl: varchar("profile_image_url"),
+  activeSessionId: varchar("active_session_id"), // Para controlar sesión única
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -102,7 +103,7 @@ export const createUserSchema = z.object({
   firstName: z.string().min(1, "Nombre es requerido"),
   lastName: z.string().min(1, "Apellido es requerido"),
   email: z.string().email("Email inválido").optional(),
-  role: z.enum(["admin", "officer"], { message: "Rol inválido" }),
+  role: z.enum(["admin", "officer", "supervisor", "agent"], { message: "Rol inválido" }),
 });
 
 export const updateUserSchema = z.object({
@@ -110,7 +111,7 @@ export const updateUserSchema = z.object({
   firstName: z.string().min(1, "Nombre es requerido").optional(),
   lastName: z.string().min(1, "Apellido es requerido").optional(),
   email: z.string().email("Email inválido").optional(),
-  role: z.enum(["admin", "officer"], { message: "Rol inválido" }).optional(),
+  role: z.enum(["admin", "officer", "supervisor", "agent"], { message: "Rol inválido" }).optional(),
   status: z.enum(["active", "suspended"], { message: "Estado inválido" }).optional(),
 });
 
@@ -121,7 +122,7 @@ export const suspendUserSchema = z.object({
 
 export const searchUserSchema = z.object({
   username: z.string().optional(),
-  role: z.enum(["admin", "officer"]).optional(),
+  role: z.enum(["admin", "officer", "supervisor", "agent"]).optional(),
   status: z.enum(["active", "suspended"]).optional(),
 });
 

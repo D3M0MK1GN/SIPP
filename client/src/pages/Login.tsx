@@ -45,9 +45,32 @@ export default function Login() {
       // The auth check will automatically redirect to dashboard
     },
     onError: (error: any) => {
+      // Extraer el mensaje de error sin el código de estado
+      let errorMessage = "Usuario o Contraseña Incorrectos";
+      let errorTitle = "Error de autenticación";
+      
+      if (error.message) {
+        // Si el mensaje contiene el patrón "409: mensaje", es un conflicto de sesión
+        if (error.message.includes("409:")) {
+          errorTitle = "Sesión Activa Detectada";
+          const match = error.message.match(/^\d+:\s*(.+)$/);
+          if (match) {
+            errorMessage = match[1];
+          }
+        } else if (error.message.includes("401:")) {
+          // Extraer el mensaje de error 401
+          const match = error.message.match(/^\d+:\s*(.+)$/);
+          if (match) {
+            errorMessage = match[1];
+          }
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
       toast({
-        title: "Error de autenticación",
-        description: error.message || "Usuario o contraseña incorrectos",
+        title: errorTitle,
+        description: errorMessage,
         variant: "destructive",
       });
     },

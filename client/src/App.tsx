@@ -13,7 +13,7 @@ import Search from "@/pages/Search";
 import AdminUsers from "@/pages/AdminUsers";
 
 function Router() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAuth();
 
   if (isLoading) {
     return (
@@ -33,7 +33,17 @@ function Router() {
       ) : (
         <Layout>
           <Switch>
-            <Route path="/" component={Dashboard} />
+            <Route path="/" component={() => {
+              // Redirigir según el rol del usuario
+              if (user?.role === 'admin' || user?.role === 'supervisor') {
+                return <Dashboard />;
+              } else if (user?.role === 'officer') {
+                return <Register />;
+              } else if (user?.role === 'agent') {
+                return <Search />;
+              }
+              return <Register />; // Default fallback
+            }} />
             <Route path="/register" component={Register} />
             <Route path="/search" component={Search} />
             <Route path="/admin/users" component={AdminUsers} />

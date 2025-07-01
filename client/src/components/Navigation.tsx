@@ -21,18 +21,15 @@ export function Navigation() {
   });
 
   const allNavItems = [
-    { path: "/", icon: BarChart3, label: "Dashboard", id: "dashboard", adminOnly: true },
-    { path: "/register", icon: UserPlus, label: "Registrar", id: "register", adminOnly: false },
-    { path: "/search", icon: Search, label: "Buscar", id: "search", adminOnly: false },
-    { path: "/admin/users", icon: Users, label: "Gestión de Usuarios", id: "admin-users", adminOnly: true },
+    { path: "/", icon: BarChart3, label: "Dashboard", id: "dashboard", allowedRoles: ["admin", "supervisor"] },
+    { path: "/register", icon: UserPlus, label: "Registrar", id: "register", allowedRoles: ["admin", "officer", "supervisor"] },
+    { path: "/search", icon: Search, label: "Buscar", id: "search", allowedRoles: ["admin", "officer", "supervisor", "agent"] },
+    { path: "/admin/users", icon: Users, label: "Gestión de Usuarios", id: "admin-users", allowedRoles: ["admin"] },
   ];
 
   // Filter navigation items based on user role
   const navItems = allNavItems.filter(item => {
-    if (item.adminOnly) {
-      return user?.role === 'admin';
-    }
-    return true;
+    return item.allowedRoles.includes(user?.role || '');
   });
 
   const isActive = (path: string) => {
